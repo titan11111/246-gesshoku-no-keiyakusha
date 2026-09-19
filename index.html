@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#07050f">
+<meta name="description" content="欠けた月の地下で異形と語り、契約し、蝕王を討つ探索RPG。">
+<title>246｜月蝕ノ契約者</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="game-shell">
+  <div id="game-stage">
+    <div id="screen-wrap">
+      <canvas id="g" width="320" height="224" aria-label="ゲーム画面"></canvas>
+    </div>
+  </div>
+  <footer id="control-deck" aria-label="操作盤">
+    <div class="dpad" aria-label="十字キー">
+      <button type="button" class="game-btn up" data-k="up" aria-label="上">▲</button>
+      <button type="button" class="game-btn left" data-k="left" aria-label="左">◀</button>
+      <button type="button" class="game-btn right" data-k="right" aria-label="右">▶</button>
+      <button type="button" class="game-btn down" data-k="down" aria-label="下">▼</button>
+    </div>
+    <div class="sys">
+      <button type="button" class="game-btn" id="btnMute" aria-label="音の切り替え">♪</button>
+      <button type="button" class="game-btn" id="btnPause" aria-label="一時停止">Ⅱ</button>
+    </div>
+    <div class="ab">
+      <button type="button" class="game-btn b" data-k="b" aria-label="B 戻る">B<small>戻る</small></button>
+      <button type="button" class="game-btn a" data-k="a" aria-label="A 決定">A<small>決定</small></button>
+    </div>
+  </footer>
+</div>
+<dialog id="pauseDlg" aria-labelledby="pauseTitle">
+  <h2 id="pauseTitle">一時停止</h2>
+  <div class="col">
+    <button type="button" class="game-btn" id="btnResume">再開</button>
+    <button type="button" class="game-btn" id="btnMuteDlg">音の切り替え</button>
+    <button type="button" class="game-btn" id="btnQuit">タイトルへ</button>
+  </div>
+</dialog>
+<script src="script.js"></script>
+</body>
+</html>
