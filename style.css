@@ -7,16 +7,16 @@
   -webkit-user-drag: none;
 }
 ::selection { background: transparent; color: inherit; }
-:root { --bg:#07050f; --ink:#efe4c8; --dim:#8b7fae; --line:#2b2150; --btn:#1a1433; --gold:#e8b44a; }
+:root { --bg:#080909; --ink:#e7e0cf; --dim:#8d8b80; --line:#393b38; --btn:#171918; --gold:#d5ad54; --alarm:#bd2b28; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --bg:#07050f; --ink:#efe4c8; }
+  :root:not([data-theme="light"]) { --bg:#080909; --ink:#e7e0cf; }
 }
-:root[data-theme="dark"] { --bg:#07050f; --ink:#efe4c8; }
+:root[data-theme="dark"] { --bg:#080909; --ink:#e7e0cf; }
 html, body {
   margin: 0; padding: 0; width: 100%; height: 100%;
   overflow: hidden; overscroll-behavior: none; position: fixed;
   background: var(--bg); color: var(--ink);
-  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", monospace;
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", serif;
   touch-action: manipulation;
 }
 @supports (height: 100dvh) { html, body { height: 100dvh; } }
@@ -26,21 +26,22 @@ html, body {
   display: flex; flex-direction: column; touch-action: none;
 }
 #game-stage { position: relative; flex: 0 0 75%; height: 75%; min-height: 0; }
-#screen-wrap { position: absolute; inset: 0; overflow: hidden; background: #07050f; display: flex; align-items: center; justify-content: center; }
+#screen-wrap { position: absolute; inset: 0; overflow: hidden; background: #080909; display: flex; align-items: center; justify-content: center; }
 canvas {
   display: block; width: 100%; height: 100%; touch-action: none;
   image-rendering: pixelated; image-rendering: crisp-edges;
 }
 
 .game-btn {
-  font: inherit; color: var(--ink); background: var(--btn);
-  border: 2px solid var(--line); min-width: 48px; min-height: 48px;
+  font: 700 15px/1 "Courier New", monospace; color: var(--ink); background: linear-gradient(#202321,#111312);
+  border: 1px solid #555951; box-shadow: inset 0 0 0 2px #0a0b0b, 0 2px 0 #050606;
+  min-width: 48px; min-height: 48px;
   touch-action: none; cursor: pointer;
   transition: transform .08s ease, opacity .08s ease, background .08s;
 }
-.game-btn:active, .game-btn.is-pressed { transform: scale(0.92); background: var(--line); }
+.game-btn:active, .game-btn.is-pressed { transform: translateY(2px) scale(0.96); background: #343834; box-shadow: inset 0 0 0 2px #0a0b0b; }
 .game-btn:focus-visible { outline: 2px solid var(--gold); }
-.game-btn small { display: block; font-size: 9px; color: var(--dim); }
+.game-btn small { display: block; margin-top: 5px; font: 8px/1 "Hiragino Kaku Gothic ProN", sans-serif; color: #aaa99f; white-space: nowrap; }
 
 #control-deck {
   flex: 0 0 25%; height: 25%; min-height: 0;
@@ -48,29 +49,37 @@ canvas {
   padding: 8px max(10px, env(safe-area-inset-right, 10px))
           max(8px, env(safe-area-inset-bottom, 8px))
           max(10px, env(safe-area-inset-left, 10px));
-  background: #110b24; border-top: 1px solid var(--line);
+  background:
+    repeating-linear-gradient(135deg, transparent 0 8px, rgba(255,255,255,.018) 8px 9px),
+    linear-gradient(#171918, #0d0f0e);
+  border-top: 2px solid #3e413d;
   z-index: 8; touch-action: none; overflow: hidden;
 }
 .dpad {
   display: grid; grid-template-columns: repeat(3, 48px); grid-template-rows: repeat(3, 48px);
   width: 144px; height: 144px; flex-shrink: 0;
 }
+.dpad::after {
+  content: ""; grid-column: 2; grid-row: 2; margin: 5px;
+  border: 1px solid #313431; background: #0d0f0e;
+}
 .dpad .up { grid-column: 2; grid-row: 1; }
 .dpad .left { grid-column: 1; grid-row: 2; }
 .dpad .right { grid-column: 3; grid-row: 2; }
 .dpad .down { grid-column: 2; grid-row: 3; }
 .ab { display: flex; gap: 10px; align-items: center; }
-.ab .game-btn { width: 64px; height: 64px; border-radius: 50%; }
-.ab .a { border-color: var(--gold); }
+.ab .game-btn { width: 68px; height: 68px; border-radius: 50%; }
+.ab .a { color: #fff5df; border-color: #b33a34; background: radial-gradient(circle at 38% 30%, #a82e2b, #541614 72%); }
+.ab .b { border-color: #8e865f; }
 .sys { display: flex; flex-direction: column; gap: 6px; }
 .sys .game-btn { min-width: 48px; min-height: 48px; font-size: 14px; }
 
 #pauseDlg {
-  border: 0; border-radius: 8px; background: #150f2b; color: var(--ink);
+  border: 1px solid #686a62; border-radius: 0; background: #111312; color: var(--ink);
   padding: 22px 20px; max-width: 320px; width: calc(100% - 40px);
 }
-#pauseDlg::backdrop { background: rgba(7,5,15,.8); }
-#pauseDlg h2 { margin: 0 0 14px; text-align: center; color: var(--gold); }
+#pauseDlg::backdrop { background: rgba(3,4,4,.88); }
+#pauseDlg h2 { margin: 0 0 14px; text-align: center; color: var(--gold); letter-spacing: .2em; }
 #pauseDlg .col { display: flex; flex-direction: column; gap: 10px; }
 #pauseDlg .game-btn { width: 100%; }
 

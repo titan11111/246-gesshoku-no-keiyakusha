@@ -5,6 +5,7 @@ ctx.imageSmoothingEnabled=false;
 const screenWrap=document.getElementById('screen-wrap');
 const W=320,H=224,TS=16,MW=19,MH=11,OX=8,OY=0;
 let paused=false,mute=false,AC=null,bgmNode=null;
+const SAVE_KEY='tg.246.save.v2';
 function fitCanvas(){
   const r=screenWrap.getBoundingClientRect();
   const dpr=Math.min(window.devicePixelRatio||1,2);
@@ -58,6 +59,28 @@ const pick=a=>a[rnd(a.length)];
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;}
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 
+function hasSave(){try{return !!localStorage.getItem(SAVE_KEY);}catch(e){return false;}}
+function clearSave(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}}
+function saveGame(){
+  if(scene!=='explore'||!P)return;
+  try{
+    localStorage.setItem(SAVE_KEY,JSON.stringify({
+      P,items,floor,map,seen,px,py,light,
+      party:party.map(a=>({id:a.m.id,hp:a.hp,maxhp:a.maxhp,atk:a.atk,def:a.def}))
+    }));
+  }catch(e){}
+}
+function loadGame(){
+  try{
+    const s=JSON.parse(localStorage.getItem(SAVE_KEY));
+    if(!s||!s.P||!Array.isArray(s.map))return false;
+    P=s.P;items=s.items;floor=s.floor;map=s.map;seen=s.seen;px=s.px;py=s.py;light=s.light;
+    party=(s.party||[]).map(v=>{const m=ROSTER.find(r=>r.id===v.id);if(!m)return null;const a=mkUnit(m,'ally');return Object.assign(a,{hp:v.hp,maxhp:v.maxhp,atk:v.atk,def:v.def});}).filter(Boolean);
+    battle=null;ui=null;busy=false;endDone=false;scene='explore';titleChoice=0;
+    return true;
+  }catch(e){clearSave();return false;}
+}
+
 /* ===== データ ===== */
 const P_NAME=['陽','陰','狂'];
 const ROSTER=[
@@ -90,7 +113,7 @@ const QS=[
 ];
 
 /* ===== 状態 ===== */
-let scene='title',ui=null,busy=false,frame=0,endDone=false;
+let scene='title',ui=null,busy=false,frame=0,endDone=false,titleChoice=0;
 let P,party,items,floor,map,seen,px,py,light;
 let battle=null,fuseFx=null,pops=[],shake=0,hurt=0;
 const ME={n:'あなた',isP:true,get hp(){return P.hp},set hp(v){P.hp=v},get maxhp(){return P.maxhp},get atk(){return 6+P.lv*2},get def(){return P.lv}};
@@ -115,16 +138,15 @@ function handleUI(k){
 
 /* ===== ゲーム進行 ===== */
 function newGame(){
+  clearSave();
   P={lv:1,exp:0,maxhp:38,hp:38,money:20};
   items={heal:2,oil:1};party=[];floor=1;light=100;endDone=false;
-  genFloor();scene='explore';intro();
+  genFloor();scene='explore';saveGame();intro();
 }
 async function intro(){
   busy=true;
-  await say('月が欠けた夜から、この街の地下には異形がすみついた。');
-  await say('ランタンの灯を絶やさず、最下層に巣くう蝕王を討て。');
-  await say('異形とは戦うだけじゃない。「はなす」で心を通わせれば、契約して仲間――契霊にできる。');
-  await say('祭壇（赤い輪）では契霊を2体ささげて、より強い霊を呼べる。');
+  await say('中央統制局は月蝕を隠した。あなたは封鎖区の地下へ潜り、最下層の蝕王を討て。');
+  await say('階段を探して地下5階へ。異形には「はなす」で契約できる。赤い祭壇では契霊2体を融魂できる。');
   busy=false;
 }
 
@@ -165,7 +187,7 @@ async function step(dx,dy){
       await say('湧き水に触れた。全員の傷が癒え、倒れた契霊も目をさました。灯も少し強まった。');}
     else if(t===6)await bossFight();
     else if(Math.random()<(light>0?0.07:0.14))await runBattle(encounterSet(),false);
-  }finally{busy=false;}
+  }finally{busy=false;saveGame();}
 }
 async function loot(){
   const r=Math.random();
@@ -320,6 +342,7 @@ async function bossFight(){
   await say('闇の底で、欠けた月を喰らう影がこちらを見た。');
   const r=await runBattle([mkUnit(BOSS,'enemy')],true);
   if(r!=='win')return;
+  clearSave();
   scene='end';
   await say('ヨミガラスが崩れ落ち、喰われていた月が空へ還っていく。');
   await say('街の灯が、ひとつ、またひとつ、ともりはじめた。');
@@ -386,18 +409,40 @@ function sprite(m){
 /* ===== シーン描画 ===== */
 const skyline=Array.from({length:22},(_,i)=>({x:i*15-4,w:10+((i*37)%9),h:18+((i*53)%34),broken:(i*7)%3===0}));
 function drawTitle(){
-  const bands=['#07050f','#0a0718','#0d0920','#110b28','#150d2e','#190f34'];
-  bands.forEach((c,i)=>{ctx.fillStyle=c;ctx.fillRect(0,i*38,W,38);});
-  drawEclipse(160,74,38);
-  ctx.fillStyle='#05030a';
-  for(const b of skyline){ctx.fillRect(b.x,H-b.h,b.w,b.h);if(b.broken){ctx.fillRect(b.x+2,H-b.h-5,3,5);}}
-  ctx.fillStyle=pat(COL.gold);for(const b of skyline)if(b.h>30&&(b.x+frame>>6)%3===0)ctx.fillRect(b.x+3,H-b.h+8,2,2);
-  ctx.textAlign='center';font(28);
-  ctx.fillStyle=COL.blood;ctx.fillText('月蝕ノ契約者',162,128);
-  ctx.fillStyle=COL.ink;ctx.fillText('月蝕ノ契約者',160,126);
-  font(10);ctx.fillStyle=COL.dim;ctx.fillText('異形と語り、契り、合わせ、最下層の蝕王を討て',160,160);
-  if((frame>>5)%2===0){font(12);ctx.fillStyle=COL.gold;ctx.fillText('A でさいしょから',160,180);}
-  ctx.textAlign='left';
+  ctx.fillStyle='#090a0a';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#b42623';ctx.fillRect(0,0,W,13);
+  font(8);ctx.fillStyle='#f0e8d8';ctx.fillText('中央統制局・第九封鎖区',7,3);
+  ctx.textAlign='right';ctx.fillText('緊急放送 00:00:00',313,3);ctx.textAlign='left';
+
+  ctx.save();ctx.beginPath();ctx.rect(0,13,W,122);ctx.clip();
+  ctx.fillStyle='#111313';ctx.fillRect(0,13,W,122);
+  ctx.fillStyle='#181b19';
+  for(let x=5;x<330;x+=22){const h=24+(x*17)%62;ctx.fillRect(x,135-h,15,h);ctx.fillRect(x+4,126-h,7,9);}
+  ctx.globalAlpha=.16;ctx.fillStyle='#d9d2bf';ctx.beginPath();ctx.moveTo(24,135);ctx.lineTo(224,18);ctx.lineTo(258,18);ctx.lineTo(82,135);ctx.fill();ctx.globalAlpha=1;
+  drawEclipse(244,67,42);
+  ctx.fillStyle='#080909';ctx.fillRect(229,12,3,98);ctx.fillRect(257,17,2,104);
+  ctx.strokeStyle='#54201f';ctx.strokeRect(197.5,19.5,94,94);
+  ctx.restore();
+
+  const glitch=frame%173<5?2:0;
+  font(27);ctx.fillStyle='#5e1515';ctx.fillText('月蝕ノ',18+glitch,43);ctx.fillText('契約者',18-glitch,73);
+  ctx.fillStyle='#e5dfd0';ctx.fillText('月蝕ノ',16,41);ctx.fillText('契約者',16,71);
+  font(8);ctx.fillStyle='#9b9c94';ctx.fillText('ECLIPSE COVENANT / FILE 246',18,105);
+  ctx.fillStyle='#b42623';ctx.fillRect(15,115,137,13);ctx.fillStyle='#f3ead9';font(9);ctx.fillText('警告：月を直視するな',22,117);
+
+  ctx.fillStyle='#0c0d0d';ctx.fillRect(0,135,W,89);ctx.fillStyle='#353834';ctx.fillRect(0,135,W,1);
+  font(8);ctx.fillStyle='#777a73';ctx.fillText('市民識別: UNKNOWN　契約適合率: 87.3%',15,141);
+  const opts=hasSave()?['前回の契約を再開','新しい契約を開始']:['契約者として登録'];
+  opts.forEach((o,i)=>{
+    const y=156+i*23,sel=i===titleChoice;
+    ctx.fillStyle=sel?'#b42623':'#171918';ctx.fillRect(15,y,222,18);
+    ctx.strokeStyle=sel?'#dc615b':'#444742';ctx.strokeRect(15.5,y+.5,221,17);
+    font(10);ctx.fillStyle=sel?'#fff5e6':'#aaa99f';ctx.fillText(sel?'▶':'·',23,y+4);ctx.fillText(o,39,y+4);
+  });
+  font(8);ctx.fillStyle='#797b75';ctx.fillText('方向キー: 選択　A / 画面タップ: 認証',15,211);
+
+  ctx.globalAlpha=.13;ctx.fillStyle='#ffffff';for(let y=14;y<H;y+=3)ctx.fillRect(0,y,W,1);ctx.globalAlpha=1;
+  if(frame%211<3){ctx.fillStyle='rgba(190,35,31,.25)';ctx.fillRect(0,46+(frame%3)*17,W,3);}
 }
 function drawTile(x,y,t){
   const sx=OX+x*TS,sy=OY+y*TS;
@@ -429,6 +474,7 @@ function drawHUD(){
   if(!party.length){ctx.fillStyle=COL.dim;ctx.fillText('なし',40,209);}
   party.forEach((a,i)=>{ctx.fillStyle=a.hp>0?COL.ink:COL.red;ctx.fillText(a.n,40+i*92,209);bar(40+i*92,221,60,2,a.hp/a.maxhp,COL.teal);});
   ctx.fillStyle=COL.ink;ctx.fillText('霊薬',8,195);ctx.fillText(`${items.heal}`,34,195);ctx.fillText('灯油',50,195);ctx.fillText(`${items.oil}`,76,195);
+  ctx.fillStyle=COL.gold;ctx.fillText(floor<5?'目的：階段を探す':'目的：蝕王を討つ',194,209);
 }
 function drawExplore(){
   const r=light>0?2.2+light/25:1.6;
@@ -504,6 +550,7 @@ function drawEnd(){
   if(endDone){ctx.textAlign='center';font(20);ctx.fillStyle=COL.ink;ctx.fillText('おわり',160,146);
     font(12);ctx.fillStyle=COL.dim;ctx.fillText('A でタイトルへ',160,172);ctx.textAlign='left';}
 }
+let uiTapRects=[];
 function drawUI(){
   const u=ui,LH=15,pad=6,bw=W-12;font(12);
   let lines,opts=[],h;
@@ -516,10 +563,12 @@ function drawUI(){
     lines=u.prompt?wrap(u.prompt,bw-pad*2):[];opts=u.opts;h=(lines.length+opts.length)*LH+pad*2;
   }
   const bx=6,by=H-h-6;
+  uiTapRects=[];
   ctx.fillStyle=COL.panel;ctx.fillRect(bx,by,bw,h);ctx.strokeStyle=COL.line;ctx.strokeRect(bx+0.5,by+0.5,bw-1,h-1);
   ctx.strokeStyle=COL.wall;ctx.strokeRect(bx+2.5,by+2.5,bw-5,h-5);
   lines.forEach((l,i)=>{ctx.fillStyle=u.type==='say'?COL.ink:COL.dim;ctx.fillText(l,bx+pad+2,by+pad+i*LH);});
   opts.forEach((o,i)=>{const y=by+pad+(lines.length+i)*LH,sel=i===u.idx;
+    uiTapRects.push({x:bx+3,y:y-2,w:bw-6,h:LH,i});
     ctx.fillStyle=sel?COL.gold:COL.ink;if(sel)ctx.fillText('▶',bx+pad+2,y);ctx.fillText(o,bx+pad+18,y);});
   if(u.type==='say'&&u.shown>=u.text.length&&(frame>>4)%2===0){ctx.fillStyle=COL.gold;ctx.fillText('▼',bx+bw-18,by+h-18);}
 }
@@ -545,12 +594,17 @@ function press(k,rep){
   unlockAudio();
   if(ui){if(rep&&(k==='a'||k==='b'))return;handleUI(k);return;}
   if(rep&&(k==='a'||k==='b'))return;
-  if(scene==='title'){if(k==='a')newGame();return;}
+  if(scene==='title'){
+    const n=hasSave()?2:1;
+    if(k==='up'||k==='down')titleChoice=(titleChoice+(k==='down'?1:-1)+n)%n;
+    else if(k==='a'){if(hasSave()&&titleChoice===0){if(!loadGame())newGame();}else newGame();}
+    return;
+  }
   if(scene==='over'){if(k==='a')scene='title';return;}
   if(scene==='end'){if(k==='a'&&endDone)scene='title';return;}
   if(scene==='explore'&&!busy){
     const d={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}[k];
-    if(d)step(d[0],d[1]);else fieldMenu();
+    if(d)step(d[0],d[1]);else if(k==='a'||k==='b')fieldMenu();
   }
 }
 const KEYS={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',
@@ -566,6 +620,15 @@ document.querySelectorAll('#control-deck button[data-k]').forEach(b=>{
     if(['up','down','left','right'].includes(k)){tm=setTimeout(()=>{iv=setInterval(()=>press(k,true),120);},240);}});
   ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,stop));
 });
-cv.addEventListener('pointerdown',()=>{if(paused)return;unlockAudio();if((ui&&ui.type==='say')||['title','over','end'].includes(scene))press('a',false);});
+cv.addEventListener('pointerdown',e=>{
+  if(paused)return;unlockAudio();
+  const r=cv.getBoundingClientRect(),x=(e.clientX-r.left)*W/r.width,y=(e.clientY-r.top)*H/r.height;
+  if(ui&&ui.type==='choose'){
+    const hit=uiTapRects.find(v=>x>=v.x&&x<=v.x+v.w&&y>=v.y&&y<=v.y+v.h);
+    if(hit){ui.idx=hit.i;ui.onMove&&ui.onMove(hit.i);press('a',false);}return;
+  }
+  if(scene==='title'&&hasSave()&&y>=156&&y<202){titleChoice=Math.min(1,Math.max(0,Math.floor((y-156)/23)));press('a',false);return;}
+  if((ui&&ui.type==='say')||['title','over','end'].includes(scene))press('a',false);
+});
 
 (document.fonts&&document.fonts.load?document.fonts.load('12px "DotGothic16"').catch(()=>{}):Promise.resolve()).finally(()=>requestAnimationFrame(loop));
