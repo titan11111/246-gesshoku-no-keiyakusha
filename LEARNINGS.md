@@ -35,3 +35,10 @@
 - 置いたリダイレクトは**害はないが、壊れていたものを直したわけではない**（将来その名前で来た人を受けるだけの保険）
 - 誤認の原因: LEARNINGS.md の本文を証拠として扱ったこと。**本文は作業メモであって証拠ではない。証拠はgit履歴**
 - 検出器も v2 で「git履歴に存在 かつ HEADに不在」判定へ作り直した（`_tools/check-legacy-entry.sh`）
+
+## 2026-09-21 公開（9/20改修分の反映）
+- URL: https://titan11111.github.io/246-gesshoku-no-keiyakusha/ （HTTP 200・Pages status=built・`title=246｜月蝕ノ契約者` を実測）
+- commit: `2c974ae`（未push 0 を確認）。Pages ビルドの commit SHA が `2c974ae...` と一致することを `gh api .../pages/builds/latest` で確認
+- **本番の実体で反映を確認**: `script.js` に `中央統制局`×2 / `tg.246.save.v2`×1 がヒット（＝新タイトルとオートセーブが配信されている）。`script.js` `style.css` とも HTTP 200
+- 公開後 harness: `docs/harness-reports/246-gesshoku-no-keiyakusha-2026-09-20T23-40-08-155Z.md` → 14項目 PASS（通信量 0.04MB）
+- 鉄則8チェック: `_tools/check-legacy-entry.sh 246-gesshoku-no-keiyakusha` → 旧エントリ0件・404は0件（exit 0）
